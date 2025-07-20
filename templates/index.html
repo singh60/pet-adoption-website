@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pet Adoption</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background: #f7f8fa;
+            color: #314158;
+            font-family: system-ui, Arial, sans-serif;
+            margin: 0; padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 3px 18px #eef3fa;
+            padding: 28px 18px 32px 18px;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 0 0 18px 0;
+            letter-spacing: -1px;
+        }
+        h2 {
+            font-size: 1.13rem;
+            font-weight: 600;
+            margin: 26px 0 14px 0;
+            letter-spacing: 0;
+        }
+        form {
+            margin-bottom: 0;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 9px 8px;
+            margin-top: 3px;
+            font-size: 1rem;
+            border: 1px solid #c1d0e3;
+            border-radius: 6px;
+            background: #fafbfc;
+            outline: none;
+        }
+        input[type="file"] { padding: 5px 0; }
+        button {
+            border: none;
+            border-radius: 6px;
+            padding: 8px 18px;
+            font-weight: 500;
+            font-size: 1.02em;
+            background: #4682e8;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: background 0.15s;
+        }
+        button:hover { background: #2864ce; }
+        .pet-card {
+            border: 1px solid #eef0f4;
+            background: #f8fafb;
+            border-radius: 10px;
+            display: flex;
+            align-items: flex-start;
+            padding: 16px 12px;
+            margin-bottom: 10px;
+            gap: 18px;
+        }
+        .pet-card img {
+            width: 86px; height: 86px;
+            border-radius: 7px;
+            object-fit: cover;
+            background: #e8eaee;
+            border: 1px solid #e3eaf5;
+            margin-right: 10px;
+        }
+        .pet-details { flex: 1; }
+        .pet-actions {
+            min-width: 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .edit-form input[type="text"] {
+            width: 102px;
+            margin-right: 4px;
+            margin-bottom: 5px;
+        }
+        .edit-form button { margin-bottom: 0; margin-right: 2px; padding: 5px 11px; }
+        .success, .error {
+            border-radius: 4px;
+            padding: 9px 15px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            width: fit-content;
+        }
+        .success { background: #e2faf2; color: #287056; border: 1px solid #afe2d1;}
+        .error { background: #fff3f2; color: #a03f3b; border: 1px solid #fed4d2;}
+        @media (max-width: 650px) {
+            .container { padding: 10px 2vw; border-radius: 0; }
+            .pet-card { flex-direction: column; align-items: flex-start; }
+            .pet-card img { margin-bottom: 9px; }
+            .pet-actions { flex-direction: row; width: 100%; margin-top: 8px; justify-content: flex-start; }
+        }
+    </style>
+    <script>
+        function showEditForm(idx, name, breed, age) {
+            const formContainer = document.getElementById('edit-form-' + idx);
+            formContainer.innerHTML = `
+                <form method="POST" action="/edit" class="edit-form" style="margin-top:5px;">
+                    <input type="hidden" name="pet_index" value="${idx}">
+                    <input type="text" name="edit_name" value="${name}" required placeholder="Name">
+                    <input type="text" name="edit_breed" value="${breed}" required placeholder="Breed">
+                    <input type="text" name="edit_age" value="${age}" required placeholder="Age">
+                    <button type="submit">Save</button>
+                    <button type="button" onclick="hideEditForm(${idx})">Cancel</button>
+                </form>`;
+        }
+        function hideEditForm(idx) {
+            document.getElementById('edit-form-' + idx).innerHTML = '';
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+
+    <h1>Pet Adoption</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if errors %}
+        <div class="error">
+            {% for error in errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h2>Add a New Pet</h2>
+    <form method="POST" enctype="multipart/form-data" style="margin-bottom:17px;">
+        <div class="form-group">
+            <input type="text" name="name" required placeholder="Name">
+        </div>
+        <div class="form-group">
+            <input type="text" name="breed" required placeholder="Breed">
+        </div>
+        <div class="form-group">
+            <input type="text" name="age" required placeholder="Age">
+        </div>
+        <div class="form-group">
+            <input type="file" name="photo" accept="image/*" required>
+        </div>
+        <button type="submit">Add Pet</button>
+    </form>
+
+    <h2>Available Pets</h2>
+    {% if pets %}
+        {% for item in pets %}
+            <div class="pet-card">
+                <img src="{{ item.pet.image_url }}" alt="Pet">
+                <div class="pet-details">
+                    <strong>{{ item.pet.name }}</strong>
+                    <div>Breed: {{ item.pet.breed }}</div>
+                    <div>Age: {{ item.pet.age }}</div>
+                </div>
+                <div class="pet-actions">
+                    <form method="POST" action="/adopt" style="display:inline;">
+                        <input type="hidden" name="pet_index" value="{{ item.idx }}">
+                        <button type="submit" title="Mark as Adopted">Adopted</button>
+                    </form>
+                    <form method="POST" action="/delete" style="display:inline;">
+                        <input type="hidden" name="pet_index" value="{{ item.idx }}">
+                        <button type="submit" onclick="return confirm('Delete this pet?')" title="Delete Pet" style="background:#e07068;">Delete</button>
+                    </form>
+                    <button style="background:#eed670; color:#3d433d;" title="Edit"
+                            onclick="showEditForm({{ item.idx }}, '{{ item.pet.name|e }}', '{{ item.pet.breed|e }}', '{{ item.pet.age|e }}')">Edit</button>
+                    <div id="edit-form-{{ item.idx }}"></div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div style="padding:12px; color:#8a96a2;">No pets available at the moment.</div>
+    {% endif %}
+
+    <h2>Adopted Pets</h2>
+    {% if adopted_pets %}
+        {% for item in adopted_pets %}
+            <div class="pet-card" style="opacity:0.67; background:#f4f5f7;">
+                <img src="{{ item.pet.image_url }}" alt="Pet">
+                <div class="pet-details">
+                    <strong>{{ item.pet.name }}</strong>
+                    <div>Breed: {{ item.pet.breed }}</div>
+                    <div>Age: {{ item.pet.age }}</div>
+                </div>
+                <div class="pet-actions">
+                    <form method="POST" action="/delete" style="display:inline;">
+                        <input type="hidden" name="pet_index" value="{{ item.idx }}">
+                        <button type="submit" onclick="return confirm('Delete this pet?')" title="Delete Pet" style="background:#e07068;">Delete</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div style="padding:11px; color:#8a96a2;">No adopted pets yet.</div>
+    {% endif %}
+</div>
+</body>
+</html>
